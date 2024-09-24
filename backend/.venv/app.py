@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from functools import wraps
 from flask_cors import CORS
 import os
 
@@ -19,6 +20,8 @@ class Customer(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     phone = db.Column(db.String(15))
     password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(50), default='user')  # Add role field with 'user' as default
+
 
     def set_password(self, password):
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -31,6 +34,7 @@ class Laptop(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
     brand = db.Column(db.String(50), nullable=False)
     model = db.Column(db.String(50), nullable=False)
+    serial_number = db.Column(db.String(50), nullable=False)
     issue_description = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(200))  # Path to uploaded image
     customer = db.relationship('Customer', backref='laptops')
@@ -43,6 +47,7 @@ class Repair(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=db.func.current_timestamp())
     cost = db.Column(db.Float, nullable=True)
     paid = db.Column(db.Boolean, default=False)
+    repair_description = db.Column(db.Text, nullable=True)  # เพิ่มฟิลด์ repair_description
     laptop = db.relationship('Laptop', backref='repairs')
 
 class RepairStatusHistory(db.Model):
@@ -59,6 +64,22 @@ def save_image(file):
     file.save(path)
     return path
 
+########################################################################################################################################################
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        current_user_id = get_jwt_identity()
+        user = Customer.query.get(current_user_id)
+
+        if not user or user.role != 'admin':
+            return jsonify({"error": "Admins only! Unauthorized access."}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+########################################################################################################################################################
+
 
 # Route to submit a new repair request
 @app.route('/submit-repair', methods=['POST'])
@@ -73,6 +94,7 @@ def submit_repair():
     data = request.form
     brand = data.get('brand')
     model = data.get('model')
+    serial_number = request.form.get('serial_number')
     issue_description = data.get('issue_description')
     image_file = request.files.get('image')
 
@@ -81,15 +103,17 @@ def submit_repair():
     else:
         image_path = None
 
-    new_laptop = Laptop(customer_id=customer.id, brand=brand, model=model, issue_description=issue_description, image=image_path)
+    new_laptop = Laptop(customer_id=customer.id, brand=brand, model=model,serial_number=serial_number, issue_description=issue_description, image=image_path)
     db.session.add(new_laptop)
     db.session.commit()
 
-    new_repair = Repair(laptop_id=new_laptop.id, repair_status='Sending')
+    new_repair = Repair(laptop_id=new_laptop.id, repair_status='Sending', repair_description='waiting for update')
     db.session.add(new_repair)
     db.session.commit()
 
     return jsonify({"message": "Repair request submitted successfully"}), 201
+
+########################################################################################################################################################
 
 # Route to get repair status of a specific request
 @app.route('/repair-status/<int:repair_id>', methods=['GET'])
@@ -106,10 +130,15 @@ def repair_status(repair_id):
         "model": repair.laptop.model,
         "issue_description": repair.laptop.issue_description,
         "repair_status": repair.repair_status,
+        "updated_at": repair.updated_at,
         "cost": repair.cost,
         "paid": repair.paid,
+        "repair_description": repair.repair_description,
         "created_at": repair.created_at
     }), 200
+
+
+########################################################################################################################################################
 
 # Route to fetch all repair requests for the logged-in customer
 @app.route('/my-repairs', methods=['GET'])
@@ -131,9 +160,12 @@ def my_repairs():
 
     return jsonify(repair_list), 200
 
+########################################################################################################################################################
+
 # Route to fetch all repairs (admin only)
 @app.route('/admin/all-repairs', methods=['GET'])
 @jwt_required()
+@admin_required
 def get_all_repairs():
     repairs = Repair.query.all()
     repair_list = [{
@@ -150,9 +182,12 @@ def get_all_repairs():
     
     return jsonify(repair_list), 200
 
+########################################################################################################################################################
+
 # Route to update repair status (admin only)
 @app.route('/admin/update-repair-status/<int:repair_id>', methods=['PUT'])
 @jwt_required()
+@admin_required
 def update_repair_status(repair_id):
     data = request.get_json()
     new_status = data.get('repair_status')
@@ -166,13 +201,17 @@ def update_repair_status(repair_id):
 
     return jsonify({"message": "Repair status updated"}), 200
 
+########################################################################################################################################################
+
 # Route to update repair cost and payment status (admin only)
 @app.route('/admin/update-repair-cost/<int:repair_id>', methods=['PUT'])
 @jwt_required()
+@admin_required
 def update_repair_cost(repair_id):
     data = request.get_json()
     cost = data.get('cost')
     paid = data.get('paid')
+    repair_description = data.get('repair_description')  # รับค่า repair_description
 
     repair = Repair.query.get(repair_id)
     if not repair:
@@ -180,9 +219,12 @@ def update_repair_cost(repair_id):
 
     repair.cost = cost
     repair.paid = paid
+    repair.repair_description = repair_description  # อัปเดต repair_description
     db.session.commit()
 
     return jsonify({"message": "Repair cost and payment status updated"}), 200
+
+########################################################################################################################################################
 
 # Registration Route
 @app.route('/register', methods=['POST'])
@@ -204,38 +246,96 @@ def register():
     return jsonify({"message": "Registration successful"}), 201
 
 
-# Login Route
+########################################################################################################################################################
+
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
 
-    customer = Customer.query.filter_by(email=email).first()
+    user = Customer.query.filter_by(email=email).first()
 
-    if not customer or not customer.check_password(password):
+    if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    # Create JWT token
-    access_token = create_access_token(identity=customer.id)
-    return jsonify({"access_token": access_token}), 200
+    # สร้าง JWT token
+    access_token = create_access_token(identity=user.id)
+
+    # ส่ง user_id กลับมาใน response ด้วย
+    return jsonify({
+        "access_token": access_token,
+        "role": user.role,
+        "user_id": user.id  # ตรวจสอบว่าคุณส่ง user_id กลับมาด้วย
+    }), 200
 
 
-# Protected Route (for testing JWT)
-@app.route('/profile', methods=['GET'])
+########################################################################################################################################################
+
+# #  user Route (for testing JWT)
+# @app.route('/profile', methods=['GET'])
+# @jwt_required()
+# def profile():
+#     current_user_id = get_jwt_identity()
+#     customer = Customer.query.get(current_user_id)
+
+#     if not customer:
+#         return jsonify({"error": "User not found"}), 404
+
+#     return jsonify({
+#         "name": customer.name,
+#         "email": customer.email,
+#         "phone": customer.phone
+#     }), 200
+
+########################################################################################################################################################
+
+# Route สำหรับดึง profile ตาม user_id
+@app.route('/profile/<int:user_id>', methods=['GET'])
 @jwt_required()
-def profile():
-    current_user_id = get_jwt_identity()
-    customer = Customer.query.get(current_user_id)
+def get_user_profile(user_id):
+    current_user_id = get_jwt_identity()  # ดึงค่า ID ของผู้ใช้ที่ทำการ login อยู่
+    if current_user_id != user_id:
+        return jsonify({"error": "Unauthorized access"}), 403
 
-    if not customer:
+    user = Customer.query.get(user_id)
+    if not user:
         return jsonify({"error": "User not found"}), 404
 
     return jsonify({
-        "name": customer.name,
-        "email": customer.email,
-        "phone": customer.phone
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "role": user.role
     }), 200
+
+
+########################################################################################################################################################
+
+# Admin profile route
+@app.route('/admin/profile', methods=['GET'])
+@jwt_required()  # Requires the user to be logged in with a valid JWT token
+@admin_required  # Requires the user to have admin role
+def admin_profile():
+    current_user_id = get_jwt_identity()
+    admin = Customer.query.get(current_user_id)
+
+    if not admin:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "id": admin.id,
+        "name": admin.name,
+        "email": admin.email,
+        "phone": admin.phone,
+        "role": admin.role
+    }), 200
+
+########################################################################################################################################################
+
+
 with app.app_context():
      db.create_all()
 

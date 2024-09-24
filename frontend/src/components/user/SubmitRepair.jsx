@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const SubmitRepair = () => {
   const [formData, setFormData] = useState({
-    brand: '', model: '', issue_description: '', image: null
+    brand: '', model: '', issue_description: '', image: null, serial_number: ''
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +34,7 @@ const SubmitRepair = () => {
     formDataObj.append('brand', formData.brand);
     formDataObj.append('model', formData.model);
     formDataObj.append('issue_description', formData.issue_description);
+    formDataObj.append('serial_number', formData.serial_number);  // ส่ง S/N ไปด้วย
     if (formData.image) formDataObj.append('image', formData.image);
 
     try {
@@ -74,6 +75,12 @@ const SubmitRepair = () => {
                 <input className="input input-solid" type="text" name="model" placeholder="Laptop Model" onChange={handleChange} required />
               </div>
             </div>
+
+            <div>
+              <label className="sr-only" htmlFor="serial_number">S/N</label>
+              <input className="input input-solid max-w-full" type="text" name="serial_number" placeholder="Laptop S/N" onChange={handleChange} required />  {/* ฟิลด์ S/N */}
+            </div>
+
             <div className="w-full">
               <label className="sr-only" htmlFor="message">Message</label>
               <textarea className="textarea textarea-solid max-w-full" name="issue_description" placeholder="Issue Description" rows="8" onChange={handleChange} required />

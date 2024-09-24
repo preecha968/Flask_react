@@ -42,7 +42,8 @@ const AdminRepairList = () => {
     try {
       await axios.put(`http://localhost:5000/admin/update-repair-cost/${repairId}`, {
         cost: repairData.cost,
-        paid: repairData.paid === "true" // Ensure this is treated as a boolean
+        paid: repairData.paid === "true", // Ensure this is treated as a boolean
+        repair_description: repairData.repair_description // ส่งข้อมูล repair_description
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -93,6 +94,7 @@ const AdminRepairList = () => {
                   <th className="p-3">Status</th>
                   <th className="p-3">Cost</th>
                   <th className="p-3">Paid</th>
+                  <th className="p-3">Repair Description</th> {/* เพิ่มช่อง Repair Description */}
                   <th className="p-3">Action</th>
                 </tr>
               </thead>
@@ -115,6 +117,7 @@ const AdminRepairList = () => {
                         value={formData[repair.repair_id]?.repair_status || repair.repair_status}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
                         className="input input-bordered"
+                        style={{ width:'130px'}}
                       />
                     </td>
                     <td className="p-3">
@@ -124,6 +127,7 @@ const AdminRepairList = () => {
                         value={formData[repair.repair_id]?.cost || repair.cost || ''}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
                         className="input input-bordered"
+                        style={{ width:'130px'}}
                       />
                     </td>
                     <td className="p-3">
@@ -132,17 +136,28 @@ const AdminRepairList = () => {
                         value={formData[repair.repair_id]?.paid || (repair.paid ? "true" : "false")}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
                         className="select select-bordered"
+                        style={{ width: '90px' }} 
                       >
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                       </select>
                     </td>
+                    <td className="p-3">  {/* เพิ่มฟิลด์สำหรับกรอก Repair Description */}
+                      <textarea
+                        name="repair_description"
+                        value={formData[repair.repair_id]?.repair_description || ''}
+                        onChange={(e) => handleInputChange(e, repair.repair_id)}
+                        className="textarea textarea-bordered"
+                        placeholder="Repair Description"
+                        style={{ minWidth: '280px' }}
+                      ></textarea>
+                    </td>
                     <td className="p-3">
                       <button
-                        className="px-3 py-1 font-semibold rounded-md dark:bg-violet-600 dark:text-gray-50"
+                        className="px-3 py-2 font-semibold rounded-lg dark:bg-violet-600 dark:text-gray-50"
                         onClick={() => handleUpdate(repair.repair_id)}
                       >
-                        Update
+                        UPDATE
                       </button>
                     </td>
                   </tr>

@@ -15,10 +15,16 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:5000/login', formData);
-      localStorage.setItem('token', response.data.access_token);
-      navigate('/profile');
+      const { access_token, role, user_id } = response.data;  // ตรวจสอบว่า user_id ถูกดึงมาจาก response
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('role', role);  // Store role in local storage
+      if (role === 'admin') {
+        navigate('/admin/admindashboard');
+      } else {
+        navigate(`/profile/${user_id}`);  // ใช้ user_id ในการนำทาง
+      }
     } catch (err) {
-      setError(err.response.data.error);
+      setError('Invalid email or password');
     }
   };
 
