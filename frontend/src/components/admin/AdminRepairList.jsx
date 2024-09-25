@@ -102,23 +102,29 @@ const AdminRepairList = () => {
                 {repairs.map((repair) => (
                   <tr className="border-b border-opacity-20 dark:border-gray-300 dark:bg-gray-50" key={repair.repair_id}>
                     <td className="p-3">
-                      <p>{repair.repair_id}</p>
+                      <p className='font-bold '>{repair.repair_id}</p>
                     </td>
                     <td className="p-3">
-                      <p>{repair.brand}</p>
+                      <p className='font-bold text-base'>{repair.brand}</p>
                     </td>
                     <td className="p-3">
-                      <p>{repair.model}</p>
+                      <p className='font-bold text-base'>{repair.model}</p>
                     </td>
-                    <td className="p-3 ">
-                      <input
-                        type="text"
+                    <td className="p-3">
+                      <select
                         name="repair_status"
                         value={formData[repair.repair_id]?.repair_status || repair.repair_status}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
-                        className="input input-bordered"
-                        style={{ width:'130px'}}
-                      />
+                        className="select select-bordered"
+                        style={{ width: '160px' }}
+                      >
+                        <option value="Sending">Sending</option>
+                        <option value="Received">Received</option>
+                        <option value="In Progress">In progress</option>
+                        <option value="Testing">testing</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Waitng Payment">waiting Payment</option>
+                      </select>
                     </td>
                     <td className="p-3">
                       <input
@@ -127,7 +133,7 @@ const AdminRepairList = () => {
                         value={formData[repair.repair_id]?.cost || repair.cost || ''}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
                         className="input input-bordered"
-                        style={{ width:'130px'}}
+                        style={{ width: '130px' }}
                       />
                     </td>
                     <td className="p-3">
@@ -136,7 +142,7 @@ const AdminRepairList = () => {
                         value={formData[repair.repair_id]?.paid || (repair.paid ? "true" : "false")}
                         onChange={(e) => handleInputChange(e, repair.repair_id)}
                         className="select select-bordered"
-                        style={{ width: '90px' }} 
+                        style={{ width: '90px' }}
                       >
                         <option value="true">Yes</option>
                         <option value="false">No</option>

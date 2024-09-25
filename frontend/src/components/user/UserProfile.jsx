@@ -46,7 +46,7 @@ const UserProfile = () => {
                 </div>
                 <div className="navbar-end">
                     <div className="dropdown">
-                        <label className="btn btn-solid-success my-2 text-xl font-bold" tabIndex="0">Welcome: mister {userProfile.name}</label>
+                        <label className="btn btn-solid-success my-2 text-xl font-bold" tabIndex="0">สวัสดี: คุณ {userProfile.name}</label>
                         <div className="dropdown-menu">
                             <a className="dropdown-item text-sm">Email: {userProfile.email}</a>
                             <a tabIndex="-1" className="dropdown-item text-sm">Phone: {userProfile.phone}</a>

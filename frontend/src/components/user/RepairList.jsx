@@ -1,29 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
-
-const CardAbout = ({repair}) => {
-  return (
-    <div className="max-w-sm bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-      <a href="#">
-        <img className="rounded-t-lg" src="#" alt="" />
-      </a>
-      <div className="p-5">
-        <a href="#">
-          <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Brand:{repair.brand}</h5>
-          <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Model:{repair.model}</h5>
-          <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">Issue:</h5>
-        </a>
-        <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">{repair.issue_description}</p>
-        <h5 className="mb-2 text-xl font-bold uppercase tracking-tight text-gray-900 dark:text-white">{repair.created_at}</h5>
-        <Link to={`/repairstatus/${repair.repair_id}`} className="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-          Current status
-        </Link>
-      </div>
-    </div>
-  )
-}
+import formatDate from '../protectedroute/FormatDate';
 
 const RepairList = () => {
   const [repairs, setRepairs] = useState([]);
@@ -49,10 +27,45 @@ const RepairList = () => {
   }, []);
 
   return (
-    <div className=' ml-12 mt-32 flex flex-wrap gap-10'>
+    <div className='ml-16 mt-32 flex flex-wrap gap-10'>
       {repairs.length ? (
         repairs.map((repair) => (
-          <CardAbout key={repair.repair_id} repair={repair} />
+          <div key={repair.repair_id} className="relative max-w-sm bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+            {/* แสดง radio button ถ้าสถานะเป็น Completed */}
+            {repair.repair_status === 'Completed' && (
+              <div className="absolute top-3 right-3">
+                <input type="radio" className="radio-success radio" checked readOnly />
+              </div>
+            )}
+            <a href="#">
+              <img className="rounded-t-lg" src="#" alt="" />
+            </a>
+            <div className="p-5">
+              <a href="#">
+                <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                  Brand: {repair.brand}
+                </h5>
+                <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                  Model: {repair.model}
+                </h5>
+                <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+                  Issue:
+                </h5>
+              </a>
+              <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
+                {repair.issue_description}
+              </p>
+              <h5 className="mb-2 text-xl font-bold uppercase tracking-tight text-gray-900 dark:text-white">
+                {formatDate (repair.created_at)}
+              </h5>
+              <Link
+                to={`/repairstatus/${repair.repair_id}`}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                Current status
+              </Link>
+            </div>
+          </div>
         ))
       ) : (
         <p>{error || 'No repairs found'}</p>
@@ -62,6 +75,7 @@ const RepairList = () => {
 };
 
 export default RepairList;
+
 
 
 {/* <div>
