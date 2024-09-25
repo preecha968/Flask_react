@@ -52,7 +52,7 @@ const SubmitRepair = () => {
 
   return (
     <div>
-      <label className="btn btn-primary" htmlFor="modal-1">Send Repair</label>
+      <label className="text-xl btn btn-primary" htmlFor="modal-1">ส่งซ่อม</label>
       <input className="modal-state" id="modal-1" type="checkbox" />
       <div className="modal">
         <label className="modal-overlay" htmlFor="modal-1"></label>

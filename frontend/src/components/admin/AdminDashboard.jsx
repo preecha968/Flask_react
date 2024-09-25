@@ -61,9 +61,9 @@ const AdminDashboard = () => {
             </div>
             <div className="navbar-center">
               {/* เมื่อคลิกแต่ละเมนูจะเปลี่ยน currentPage */}
-              <a className="navbar-item" onClick={() => setCurrentPage('home')}>Home</a>
+              <a className="navbar-item" onClick={() => setCurrentPage('home')}>History</a>
               <a className="navbar-item" onClick={() => setCurrentPage('repair')}>Repair</a>
-              <a className="navbar-item" onClick={() => setCurrentPage('contact')}>Contact</a>
+              <a className="navbar-item" onClick={() => setCurrentPage('contact')}>Manage</a>
             </div>
             <div className="navbar-end">
               <div className="dropdown">

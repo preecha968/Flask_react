@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from functools import wraps
 from flask_cors import CORS
+from fpdf import FPDF
 import os
 
 app = Flask(__name__)
@@ -76,6 +77,104 @@ def admin_required(fn):
             return jsonify({"error": "Admins only! Unauthorized access."}), 403
         return fn(*args, **kwargs)
     return wrapper
+
+
+########################################################################################################################################################
+
+# Route to get repair history for a customer
+@app.route('/my-repair-history', methods=['GET'])
+@jwt_required()
+def repair_history():
+    current_user_id = get_jwt_identity()
+    repairs = Repair.query.join(Laptop).filter(Laptop.customer_id == current_user_id).all()
+
+    repair_list = [{
+        "repair_id": repair.id,
+        "brand": repair.laptop.brand,
+        "model": repair.laptop.model,
+        "serial_number": repair.laptop.serial_number,
+        "issue_description": repair.laptop.issue_description,
+        "repair_status": repair.repair_status,
+        "repair_description":repair.repair_description,
+        "cost": repair.cost,
+        "paid": repair.paid,
+        "created_at": repair.created_at,
+        "updated_at": repair.updated_at
+    } for repair in repairs]
+
+    return jsonify(repair_list), 200
+
+
+########################################################################################################################################################
+
+# Route to download invoice as PDF
+@app.route('/download-invoice/<int:repair_id>', methods=['GET'])
+@jwt_required()
+def download_invoice(repair_id):
+    repair = Repair.query.get(repair_id)
+    if not repair:
+        return jsonify({"error": "Repair not found"}), 404
+
+    customer = repair.laptop.customer
+
+     # ตรวจสอบว่ามีไดเรกทอรี 'invoices' หรือไม่ ถ้าไม่มีให้สร้างขึ้น
+    if not os.path.exists('invoices'):
+        os.makedirs('invoices')
+
+    # Create PDF using FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Add content to PDF
+    pdf.cell(200, 10, txt="Invoice", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"Customer: {customer.name}", ln=True)
+    pdf.cell(200, 10, txt=f"Email: {customer.email}", ln=True)
+    pdf.cell(200, 10, txt=f"Phone: {customer.phone}", ln=True)
+    pdf.cell(200, 10, txt=f"Laptop Model: {repair.laptop.model}", ln=True)
+    pdf.cell(200, 10, txt=f"Serial Number: {repair.laptop.serial_number}", ln=True)
+    pdf.cell(200, 10, txt=f"Issue: {repair.laptop.issue_description}", ln=True)
+    pdf.cell(200, 10, txt=f"Repair Status: {repair.repair_status}", ln=True)
+    pdf.cell(200, 10, txt=f"repair description: {repair.repair_description}", ln=True)
+    pdf.cell(200, 10, txt=f"Cost: {repair.cost} THB", ln=True)
+    pdf.cell(200, 10, txt=f"Paid: {'Yes' if repair.paid else 'No'}", ln=True)
+
+    # Save the PDF to a file
+    file_path = os.path.join(os.getcwd(), 'invoices', f"invoice_{repair_id}.pdf")  # ใช้ os.getcwd() เพื่อดึง path ของโฟลเดอร์ที่ Flask ทำงานอยู่
+    pdf.output(file_path)
+
+    # Return the file as a download
+    return send_file(file_path, as_attachment=True)
+
+
+########################################################################################################################################################
+
+@app.route('/resubmit-repair/<int:repair_id>', methods=['POST'])
+@jwt_required()
+def resubmit_repair(repair_id):
+    current_user_id = get_jwt_identity()
+    
+    # ดึงข้อมูล repair ที่ลูกค้าต้องการส่งคำร้องใหม่
+    original_repair = Repair.query.get(repair_id)
+    
+    if not original_repair:
+        return jsonify({"error": "Original repair not found"}), 404
+    
+    # ตรวจสอบว่าลูกค้าที่ทำคำร้องซ้ำเป็นเจ้าของการซ่อมนี้จริง ๆ
+    if original_repair.laptop.customer_id != current_user_id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    # สร้างคำร้องขอซ่อมใหม่โดยใช้ข้อมูลจาก repair เดิม
+    new_repair = Repair(
+        laptop_id=original_repair.laptop_id,
+        repair_status='Resubmitted',
+        repair_description=original_repair.repair_description  # นำคำอธิบายการซ่อมเดิมมาใช้
+    )
+
+    db.session.add(new_repair)
+    db.session.commit()
+
+    return jsonify({"message": "Resubmitted repair request successfully"}), 201
 
 
 ########################################################################################################################################################

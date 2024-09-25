@@ -4,11 +4,15 @@ import { useParams } from 'react-router-dom';
 import Logout from '../auth/Logout';
 import SubmitRepair from './SubmitRepair';
 import RepairList from './RepairList';
+import RepairHistory from './RepairHistory';
 
 const UserProfile = () => {
   const { userId } = useParams();  // ดึง userId จาก URL parameters
   const [userProfile, setUserProfile] = useState({});
   const [error, setError] = useState('');
+  
+  // สถานะสำหรับการสลับระหว่าง Home และ History
+  const [currentView, setCurrentView] = useState('home');  // เริ่มต้นที่หน้า Home
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -29,48 +33,75 @@ const UserProfile = () => {
     fetchUserProfile();
   }, [userId]);
 
+  // ฟังก์ชันสำหรับเปลี่ยนเนื้อหาที่จะแสดงในหน้า (สลับเฉพาะ Home และ History)
+  const renderContent = () => {
+    if (currentView === 'home') {
+      return (
+        <div>
+          <br/>
+          <br/>
+          <h2 className="text-4xl font-bold divider divider-horizontal">💻️My Repair List💻️</h2>
+          <RepairList />
+        </div>
+      );
+    } else if (currentView === 'history') {
+      return (
+        <div>
+          <br/>
+          <br/>
+          <h2 className="text-4xl font-bold divider divider-horizontal">💻️My Repair History💻️</h2>
+          <RepairHistory/>
+        </div>
+      );
+    }
+  };
+
   return (
     <div>
       {error ? (
         <p>{error}</p>
       ) : (
         <div>
-        <div className="navbar">
-                <div className="navbar-start">
-                    <a className="navbar-item text-3xl font-bold">Profile</a>
-                </div>
-                <div className="navbar-center">
-                    <a className="navbar-item font-bold">Home</a>
-                    <a className="navbar-item font-bold"><SubmitRepair/></a>
-                    <a className="navbar-item font-bold">Contact Us</a>
-                </div>
-                <div className="navbar-end">
-                    <div className="dropdown">
-                        <label className="btn btn-solid-success my-2 text-xl font-bold" tabIndex="0">สวัสดี: คุณ {userProfile.name}</label>
-                        <div className="dropdown-menu">
-                            <a className="dropdown-item text-sm">Email: {userProfile.email}</a>
-                            <a tabIndex="-1" className="dropdown-item text-sm">Phone: {userProfile.phone}</a>
-                            <a tabIndex="-1" className="dropdown-item text-sm">Role: {userProfile.role}</a>
-                            <a tabIndex="-1" className="dropdown-item text-sm"><Logout/></a>
-                        </div>
-                    </div>
-                </div>
+          <div className="navbar">
+            <div className="navbar-start">
+              <a className="navbar-item text-3xl font-bold">Profile</a>
             </div>
-            <div >
-                <br />
-                <br />
-                <h2 className="text-4xl font-bold divider divider-horizontal">💻️My Repair List💻️</h2>
-                <RepairList/>
+            <div className="navbar-center">
+              {/* กดปุ่มแล้วเปลี่ยนสถานะ currentView เพื่อแสดงผลหน้า */}
+              <a 
+                className="navbar-item font-bold cursor-pointer"
+                onClick={() => setCurrentView('home')}
+              >
+                รายการ
+              </a>
+              <SubmitRepair />
+              <a 
+                className="navbar-item font-bold cursor-pointer"
+                onClick={() => setCurrentView('history')}
+              >
+                ประวัติ
+              </a>
             </div>
+            <div className="navbar-end">
+              <div className="dropdown">
+                <label className="btn btn-solid-success my-2 text-xl font-bold" tabIndex="0">
+                  สวัสดี: คุณ {userProfile.name}
+                </label>
+                <div className="dropdown-menu">
+                  <a className="dropdown-item text-sm">Email: {userProfile.email}</a>
+                  <a tabIndex="-1" className="dropdown-item text-sm">Phone: {userProfile.phone}</a>
+                  <a tabIndex="-1" className="dropdown-item text-sm">Role: {userProfile.role}</a>
+                  <a tabIndex="-1" className="dropdown-item text-sm"><Logout /></a>
+                </div>
+              </div>
             </div>
-        // <div>
-        //   <h2>Profile</h2>
-        //   <p>ID: {userProfile.id}</p>
-        //   <p>Name: {userProfile.name}</p>
-        //   <p>Email: {userProfile.email}</p>
-        //   <p>Phone: {userProfile.phone}</p>
-        //   <p>Role: {userProfile.role}</p>
-        // </div>
+          </div>
+          
+          <div className="content">
+            {/* ส่วนของ Home หรือ History */}
+            {renderContent()}  
+          </div>
+        </div>
       )}
     </div>
   );

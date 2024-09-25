@@ -12,6 +12,8 @@ import AdminRoute from './components/protectedroute/AdminRoute';
 import ProtectedRoute from './components/protectedroute/ProtectedRoute';
 import AdminDashboard from './components/admin/AdminDashboard';
 import UserProfile from './components/user/UserProfile';
+import ResubmitRepairRequest from './components/user/ResubmitRepairRequest';
+import RepairHistory from './components/user/RepairHistory';
 
 
 const App = () => {
@@ -29,6 +31,8 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile/></ProtectedRoute>} />
+        <Route path="/resubmitrepair/:repairId" element={<ProtectedRoute><ResubmitRepairRequest/></ProtectedRoute>} />
+        <Route path="/repairhistory" element={<ProtectedRoute><RepairHistory/></ProtectedRoute>} />
       </Routes>
     </Router></div>
   );
