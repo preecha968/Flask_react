@@ -14,6 +14,10 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import UserProfile from './components/user/UserProfile';
 import ResubmitRepairRequest from './components/user/ResubmitRepairRequest';
 import RepairHistory from './components/user/RepairHistory';
+import CustomerList from './components/admin/CustomerList';
+import CustomerRepairHistory from './components/admin/CustomerRepairHistory';
+
+
 
 
 const App = () => {
@@ -25,6 +29,8 @@ const App = () => {
         <Route path="/admin/updaterepaircost" element={<UpdateRepairCost/>}/>
         <Route path="/admin/updaterepairstatus/:repairId" element={<UpdateRepairStatusWrapper/>} />
         <Route path="/admin/adminrepairlist" element={<AdminRoute><AdminRepairList /></AdminRoute>} />
+        <Route path="/admin/customerlist" element={<AdminRoute><CustomerList/></AdminRoute>} />
+        <Route path="/admin/customer-repairs/:customerId" element={<AdminRoute><CustomerRepairHistory/></AdminRoute>} />
         <Route path="/repairstatus/:repairId" element={<RepairStatus />} />
         <Route path="/repairlist" element={<RepairList />} />
         <Route path="/submitrepair" element={<SubmitRepair />} />

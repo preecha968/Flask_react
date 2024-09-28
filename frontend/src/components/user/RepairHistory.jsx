@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
+import ResubmitRepairRequest from './ResubmitRepairRequest';
 
 const RepairHistory = () => {
     const [repairs, setRepairs] = useState([]);
@@ -88,14 +90,13 @@ const RepairHistory = () => {
                                         </td>
                                         <td className="p-3">
                                             <button className="px-3 py-1 font-semibold rounded-lg dark:bg-violet-600 dark:text-gray-50"
-                                                    onClick={() => downloadInvoice(repair.repair_id)}>
-                                                Invoice
+                                                onClick={() => downloadInvoice(repair.repair_id)}>
+                                                INVOICE
                                             </button>
                                         </td>
-                                        <td className="p-3 ">
-                                            <span className="px-3 py-1 font-semibold rounded-lg dark:bg-violet-600 dark:text-gray-50">
-                                                <span>Send</span>
-                                            </span>
+                                        <td className="p-3">
+                                            {/* เรียกใช้ ResubmitRepairRequest ทันทีเมื่อกดปุ่ม */}
+                                            <ResubmitRepairRequest repairId={repair.repair_id} />
                                         </td>
                                     </tr>
                                 ))}
@@ -115,32 +116,32 @@ export default RepairHistory;
 
 
 
- // <table>
-                //   <thead>
-                //     <tr>
-                //       <th>Brand</th>
-                //       <th>Model</th>
-                //       <th>Status</th>
-                //       <th>Cost</th>
-                //       <th>Paid</th>
-                //       <th>Actions</th>
-                //     </tr>
-                //   </thead>
-                //   <tbody>
-                //     {repairs.map(repair => (
-                //       <tr key={repair.repair_id}>
-                //         <td>{repair.brand}</td>
-                //         <td>{repair.model}</td>
-                //         <td>{repair.repair_status}</td>
-                //         <td>{repair.cost || 'N/A'}</td>
-                //         <td>{repair.paid ? 'Yes' : 'No'}</td>
-                //         <td>
-                //           <button onClick={() => downloadInvoice(repair.repair_id)}>Download Invoice</button>
-                //         </td>
-                //       </tr>
-                //     ))}
-                //   </tbody>
-                // </table>
+// <table>
+//   <thead>
+//     <tr>
+//       <th>Brand</th>
+//       <th>Model</th>
+//       <th>Status</th>
+//       <th>Cost</th>
+//       <th>Paid</th>
+//       <th>Actions</th>
+//     </tr>
+//   </thead>
+//   <tbody>
+//     {repairs.map(repair => (
+//       <tr key={repair.repair_id}>
+//         <td>{repair.brand}</td>
+//         <td>{repair.model}</td>
+//         <td>{repair.repair_status}</td>
+//         <td>{repair.cost || 'N/A'}</td>
+//         <td>{repair.paid ? 'Yes' : 'No'}</td>
+//         <td>
+//           <button onClick={() => downloadInvoice(repair.repair_id)}>Download Invoice</button>
+//         </td>
+//       </tr>
+//     ))}
+//   </tbody>
+// </table>
 
 
 

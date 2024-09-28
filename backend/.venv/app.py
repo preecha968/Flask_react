@@ -4,7 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from functools import wraps
 from flask_cors import CORS
-from fpdf import FPDF
+import pdfkit
 import os
 
 app = Flask(__name__)
@@ -86,7 +86,7 @@ def admin_required(fn):
 @jwt_required()
 def repair_history():
     current_user_id = get_jwt_identity()
-    repairs = Repair.query.join(Laptop).filter(Laptop.customer_id == current_user_id).all()
+    repairs = Repair.query.join(Laptop).filter(Laptop.customer_id == current_user_id, Repair.repair_status == 'Completed').all()
 
     repair_list = [{
         "repair_id": repair.id,
@@ -117,35 +117,45 @@ def download_invoice(repair_id):
 
     customer = repair.laptop.customer
 
-     # ตรวจสอบว่ามีไดเรกทอรี 'invoices' หรือไม่ ถ้าไม่มีให้สร้างขึ้น
+    # ตรวจสอบว่ามีไดเรกทอรี 'invoices' หรือไม่ ถ้าไม่มีให้สร้างขึ้น
     if not os.path.exists('invoices'):
         os.makedirs('invoices')
 
-    # Create PDF using FPDF
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    # HTML template for the invoice
+    html_content = f"""
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body {{ font-family: 'TH SarabunPSK', sans-serif; font-size: 18px; }}
+        h1 {{ text-align: center; }}
+      </style>
+    </head>
+    <body>
+      <h1>Invoice</h1>
+      <p><strong>Customer:</strong> {customer.name}</p>
+      <p><strong>Email:</strong> {customer.email}</p>
+      <p><strong>Phone:</strong> {customer.phone}</p>
+      <p><strong>Laptop Brand:</strong> {repair.laptop.brand}</p>
+      <p><strong>Laptop Model:</strong> {repair.laptop.model}</p>
+      <p><strong>Serial Number:</strong> {repair.laptop.serial_number}</p>
+      <p><strong>Issue:</strong> {repair.laptop.issue_description}</p>
+      <p><strong>Repair Status:</strong> {repair.repair_status}</p>
+      <p><strong>Repair Description:</strong> {repair.repair_description}</p>
+      <p><strong>Cost:</strong> {repair.cost} THB</p>
+      <p><strong>Paid:</strong> {'Yes' if repair.paid else 'No'}</p>
+    </body>
+    </html>
+    """
 
-    # Add content to PDF
-    pdf.cell(200, 10, txt="Invoice", ln=True, align='C')
-    pdf.cell(200, 10, txt=f"Customer: {customer.name}", ln=True)
-    pdf.cell(200, 10, txt=f"Email: {customer.email}", ln=True)
-    pdf.cell(200, 10, txt=f"Phone: {customer.phone}", ln=True)
-    pdf.cell(200, 10, txt=f"Laptop Model: {repair.laptop.model}", ln=True)
-    pdf.cell(200, 10, txt=f"Serial Number: {repair.laptop.serial_number}", ln=True)
-    pdf.cell(200, 10, txt=f"Issue: {repair.laptop.issue_description}", ln=True)
-    pdf.cell(200, 10, txt=f"Repair Status: {repair.repair_status}", ln=True)
-    pdf.cell(200, 10, txt=f"repair description: {repair.repair_description}", ln=True)
-    pdf.cell(200, 10, txt=f"Cost: {repair.cost} THB", ln=True)
-    pdf.cell(200, 10, txt=f"Paid: {'Yes' if repair.paid else 'No'}", ln=True)
+    # กำหนดที่เก็บไฟล์ PDF
+    file_path = os.path.join(os.getcwd(), 'invoices', f"invoice_{repair_id}.pdf")
 
-    # Save the PDF to a file
-    file_path = os.path.join(os.getcwd(), 'invoices', f"invoice_{repair_id}.pdf")  # ใช้ os.getcwd() เพื่อดึง path ของโฟลเดอร์ที่ Flask ทำงานอยู่
-    pdf.output(file_path)
+    # แปลง HTML เป็น PDF ด้วย pdfkit
+    pdfkit.from_string(html_content, file_path)
 
-    # Return the file as a download
+    # ส่งไฟล์ PDF ให้ผู้ใช้
     return send_file(file_path, as_attachment=True)
-
 
 ########################################################################################################################################################
 
@@ -325,6 +335,54 @@ def update_repair_cost(repair_id):
 
 ########################################################################################################################################################
 
+@app.route('/admin/customers', methods=['GET'])
+@jwt_required()
+@admin_required  # ใช้ฟังก์ชันนี้เพื่อป้องกันการเข้าถึงจากผู้ที่ไม่ใช่ admin
+def get_all_customers():
+    customers = Customer.query.all()
+
+    customer_list = [{
+        "id": customer.id,
+        "name": customer.name,
+        "email": customer.email,
+        "phone": customer.phone,
+        "role": customer.role
+    } for customer in customers]
+
+    return jsonify(customer_list), 200
+
+
+
+########################################################################################################################################################
+
+@app.route('/admin/customer-repairs/<int:customer_id>', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_customer_repairs(customer_id):
+    repairs = Repair.query.join(Laptop).filter(Laptop.customer_id == customer_id).all()
+
+    if not repairs:
+        return jsonify({"error": "No repair history found for this customer"}), 404
+
+    repair_list = [{
+        "repair_id": repair.id,
+        "brand": repair.laptop.brand,
+        "model": repair.laptop.model,
+        "serial_number": repair.laptop.serial_number,
+        "issue_description": repair.laptop.issue_description,
+        "repair_status": repair.repair_status,
+        "cost": repair.cost,
+        "paid": repair.paid,
+        "created_at": repair.created_at,
+        "updated_at": repair.updated_at
+    } for repair in repairs]
+
+    return jsonify(repair_list), 200
+
+
+########################################################################################################################################################
+
+
 # Registration Route
 @app.route('/register', methods=['POST'])
 def register():
@@ -369,24 +427,6 @@ def login():
         "user_id": user.id  # ตรวจสอบว่าคุณส่ง user_id กลับมาด้วย
     }), 200
 
-
-########################################################################################################################################################
-
-# #  user Route (for testing JWT)
-# @app.route('/profile', methods=['GET'])
-# @jwt_required()
-# def profile():
-#     current_user_id = get_jwt_identity()
-#     customer = Customer.query.get(current_user_id)
-
-#     if not customer:
-#         return jsonify({"error": "User not found"}), 404
-
-#     return jsonify({
-#         "name": customer.name,
-#         "email": customer.email,
-#         "phone": customer.phone
-#     }), 200
 
 ########################################################################################################################################################
 

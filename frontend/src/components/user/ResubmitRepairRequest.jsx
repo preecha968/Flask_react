@@ -1,31 +1,30 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
 
-const ResubmitRepairRequest = () => {
-  const { repairId } = useParams();
-  const [message, setMessage] = useState('');
+const ResubmitRepairRequest = ({ repairId }) => {
+  
 
   const resubmitRepair = async () => {
     const token = localStorage.getItem('token');
     try {
       const response = await axios.post(`http://localhost:5000/resubmit-repair/${repairId}`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      setMessage(response.data.message);
+      alert(response.data.message);
     } catch (err) {
-      setMessage('Failed to resubmit repair request.');
+      alert('Failed to resubmit repair request.');
       console.error(err);
     }
   };
 
   return (
     <div>
-      <h2>Resubmit Repair Request</h2>
-      <button onClick={resubmitRepair}>Resubmit Repair</button>
-      {message && <p>{message}</p>}
+      <button 
+        onClick={resubmitRepair} 
+        className="px-3 py-1 font-semibold rounded-lg dark:bg-violet-600 dark:text-gray-50"
+      >
+        SEND
+      </button>
     </div>
   );
 };

@@ -3,11 +3,12 @@ import axios from 'axios';
 
 import AdminRepairList from './AdminRepairList';
 import { useNavigate } from 'react-router-dom';
+import CustomerList from './CustomerList';
 
 const AdminDashboard = () => {
   const [adminProfile, setAdminProfile] = useState({});
   const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState('home'); // เพิ่ม state เพื่อเก็บหน้า
+  const [currentPage, setCurrentPage] = useState('repair'); // เพิ่ม state เพื่อเก็บหน้า
   const navigate = useNavigate();
   // useEffect สำหรับดึงข้อมูลโปรไฟล์
   useEffect(() => {
@@ -32,12 +33,12 @@ const AdminDashboard = () => {
   // ฟังก์ชันในการเปลี่ยนหน้า
   const renderContent = () => {
     switch (currentPage) {
-      case 'home':
+      case 'history':
         return <div><h2>Home Content</h2><p>Welcome to the Admin Dashboard!</p></div>;
       case 'repair':
         return <div><AdminRepairList/></div>;
-      case 'contact':
-        return <div><h2>Contact</h2><p>This is the Contact page content.</p></div>;
+      case 'manage':
+        return <div><CustomerList/></div>;
       default:
         return <div><h2>Home Content</h2><p>Welcome to the Admin Dashboard!</p></div>;
     }
@@ -61,9 +62,9 @@ const AdminDashboard = () => {
             </div>
             <div className="navbar-center">
               {/* เมื่อคลิกแต่ละเมนูจะเปลี่ยน currentPage */}
-              <a className="navbar-item" onClick={() => setCurrentPage('home')}>History</a>
+              <a className="navbar-item" onClick={() => setCurrentPage('history')}>History</a>
               <a className="navbar-item" onClick={() => setCurrentPage('repair')}>Repair</a>
-              <a className="navbar-item" onClick={() => setCurrentPage('contact')}>Manage</a>
+              <a className="navbar-item" onClick={() => setCurrentPage('manage')}>Manage</a>
             </div>
             <div className="navbar-end">
               <div className="dropdown">
